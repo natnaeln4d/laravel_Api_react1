@@ -19,7 +19,7 @@ class Post extends Controller
          return response()->json([
             'status'=>true,
             'posts'=>$Post
-         ]);
+         ],201);
     }
 
     /**
