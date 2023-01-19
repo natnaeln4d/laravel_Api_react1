@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\HasApiTokens;
 
 class Authcontroller extends Controller
@@ -90,6 +92,41 @@ class Authcontroller extends Controller
 
         }
 
+    }
+    public function foregotpwd(Request $request)
+    {
+        $uservalidator=Validator::make($request->only($request->emai),[
+           'email'=>['required','string','email','max:250','unique:user']
+        ]);
+       $status=Password::sendResetLink($uservalidator);
+       if($status==Password::RESET_LINK_SENT){
+        return [
+            'status'=>__($status),
+        ];
+       }
+
+       throw ValidationException::withMessages([
+        'email'=>[trans($status)],
+       ]);
+    }
+    public function reset(Request $request)
+    {
+        $credentials = request()->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+            'password' => 'required|string|confirmed'
+        ]);
+
+        $reset_password_status = Password::reset($credentials, function ($user, $password) {
+            $user->password = $password;
+            $user->save();
+        });
+
+        if ($reset_password_status == Password::INVALID_TOKEN) {
+            return response()->json(["message" => "Invalid token provided"], 400);
+        }
+
+        return response()->json(["message" => "Password has been successfully changed"]);
     }
     public function logout() {
         auth()->logout();
